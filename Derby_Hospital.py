@@ -9,13 +9,14 @@ E-mail: gustavo.mazzanti@studio.unibo.it
 """
 
 #importiamo le librerie necessarie
-import sys, signal
+import sys
+import signal
 import http.server
 import socketserver
 import random
-from bs4 import BeautifulSoup, SoupStrainer
 import socket
 import re
+from bs4 import BeautifulSoup, SoupStrainer
 try:
     from urllib2 import urlopen
     from urlparse import urljoin
@@ -71,9 +72,9 @@ def getLink():
 #Metodo che scrive su file le richieste effettuate dai client
 class ServerHandler(http.server.SimpleHTTPRequestHandler):        
     def do_GET(self):    
-        with open("GET.txt", "a") as out:
-          info = "GET request,\nPath: " + str(self.path) + "\nHeaders:\n" + str(self.headers) + "\n"
-          out.write(str(info))
+        # with open("GET.txt", "a") as out:
+        #   info = "GET request,\nPath: " + str(self.path) + "\nHeaders:\n" + str(self.headers) + "\n"
+        #   out.write(str(info))
         if self.path == '/refresh':
             resfresh_contents()
             self.path = '/'
@@ -100,6 +101,7 @@ ip = getIp();
 header_html = """
 <html>
     <head>
+        <link rel="shortcut icon" href="#">
         <style>
             h1 {
                 text-align: center;
@@ -182,7 +184,7 @@ def resfresh_contents():
     print("Started update")
     load_services()
     create_service()
-    print("Sinished update")
+    print("Finished update")
 
 
 #apertura della socket sull'ip locale e la porta predefinita
@@ -211,7 +213,7 @@ def create_service():
     for i in range(0,8,3):
         row = row + '<tr>'+ services[i] + services[i+1] + services[i+2] + '</tr>'
     image = images.get(str(random.randint(1,4)))
-    row = row + '<tr><td></td><td><a href="https://www.hsr.it/dottori?"><img src="{image}"><br><p>Altro</p></a></td>'.format(image=image)
+    row = row + '<tr><td></td><td><a href="https://www.hsr.it/dottori?"><img src="{image}"><br><p>Visualizza tutti</p></a></td>'.format(image=image)
     f.write(row)
     f.close()
 
@@ -252,8 +254,8 @@ def main():
     #Interrompe l'esecuzione se viene premuto "CTRL + C"
     signal.signal(signal.SIGINT, signal_handler)
     #Sovrascrive GETRequest.txt
-    f = open('GETRequests.txt','w', encoding="utf-8")
-    f.close()
+    # f = open('GETRequests.txt','w', encoding="utf-8")
+    # f.close()
     try:
       while True:
         server.serve_forever()
