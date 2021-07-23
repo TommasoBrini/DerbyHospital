@@ -202,7 +202,7 @@ def create_service():
     for i in range(0,8,3):
         row = row + '<tr>'+ services[i] + services[i+1] + services[i+2] + '</tr>'
     image = images.get(str(random.randint(1,4)))
-    row = row + '<tr><td></td><td><a href="https://www.hsr.it/dottori?"><img src="{image}"><br><p>Altro</p></a></td>'.format(image=image)
+    row = row + '<tr><td></td><td><a href="https://www.hsr.it/dottori?"><img src="{image}"><br><p>Tutti i servizi</p></a></td>'.format(image=image)
     f.write(row)
     f.close()
 
@@ -242,8 +242,8 @@ def main():
     server.allow_reuse_address = True  
     #interrompe il programma quando viene premuto "CTRL + C" 
     signal.signal(signal.SIGINT, signal_handler)
-    f = open('GETRequest.txt','w', encoding="utf-8")
-    f.close()
+    # f = open('GETRequest.txt','w', encoding="utf-8")
+    # f.close()
     try:
       while True:
         server.serve_forever()
