@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Jul 20 16:45:21 2021
-
-@author: Gustavo
+Progetto di Programmazione di Reti 2021
+Autori: Mazzanti Gustavo - Brini Tommaso
+Matricole: 0000914975 - 0000933814
 """
 
 #Imports
