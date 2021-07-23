@@ -20,8 +20,10 @@ except ImportError: # Python 3
     from urllib.parse import urljoin
     from urllib.request import urlopen
 
+#Istanziato l'array per le row della table html dei servizi
 services = [] 
 
+#dizionario con le immagini per i servizi
 images = {
     '1': '/images/ospedale/agg.jpg',
     '2': '/images/ospedale/agg1.png',
@@ -29,13 +31,15 @@ images = {
     '4': '/images/ospedale/agg3.jpg'
     }
 
-# Imposta il numero della porta: 8080
+# link della pagina con tutti i servizi dell'ospedale San Raffaele
 link_hospital = "https://www.hsr.it/dottori"
+
+# Imposta il numero della porta: 8080
 port = 8080
 
-# classe che mantiene le funzioni di SimpleHTTPRequestHandler e implementa
-# il metodo get nel caso in cui si voglia fare un refresh
 
+# Metodo che cerca i link dei vari servizi dell'ospedale San Raffale
+# dal link_hospital, ispezionando l'html di questa
 def getLink():
     url = link_hospital
     count = 0
@@ -61,19 +65,14 @@ def getLink():
             c=c
     return dizionario
 
-
-
 class ServerHandler(http.server.SimpleHTTPRequestHandler):        
     def do_GET(self):
-        # Scrivo sul file AllRequestsGET le richieste dei client     
-        with open("GET.txt", "a") as out:
-          info = "GET request,\nPath: " + str(self.path) + "\nHeaders:\n" + str(self.headers) + "\n"
-          out.write(str(info))
         if self.path == '/refresh':
             resfresh_contents()
             self.path = '/'
         http.server.SimpleHTTPRequestHandler.do_GET(self)
-        
+
+#Metodo che restituisce l'ip corrente della macchina su cui viene avviato il programma
 def getIp():
     s = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
     try:
@@ -87,8 +86,10 @@ def getIp():
     print("L'ip per il sito è:" ,ip)
     return ip
         
+#Viene salvato l'ip corrente nella variabile ip
 ip = getIp();
 
+#Header valido per tutte le pagine html
 header_html = """
 <html>
     <head>
@@ -140,6 +141,7 @@ topnav a -> scritte del menu
 
 '''
 
+#
 navigation_bar = """
         <br>
         <br>
@@ -173,7 +175,6 @@ def resfresh_contents():
     print("started update")
     load_services()
     create_service()
-    create_index()
     print("finished update")
 
 
@@ -231,6 +232,7 @@ def signal_handler(signal, frame):
       
 def main():
     resfresh_contents()
+    create_index()
     server.daemon_threads = True 
     server.allow_reuse_address = True  
     signal.signal(signal.SIGINT, signal_handler)
