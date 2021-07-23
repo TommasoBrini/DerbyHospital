@@ -49,7 +49,7 @@ def getLink():
     count = 0
     c = 0
     dizionario={}
-    while count<21:
+    while count<12:
         if c<10:
             tag = "00" + str(c)
         elif c<100:
@@ -58,12 +58,12 @@ def getLink():
             tag = str(count)
         
         only_links = SoupStrainer("a", href=re.compile(tag))
-        soup = BeautifulSoup(urlopen(url), parse_only=only_links)
+        soup = BeautifulSoup(urlopen(url), parse_only=only_links,features="lxml")
         urls = [urljoin(url,a["href"]) for a in soup(only_links)]
         link = "n".join(urls)
         c+=1
         try :
-            dizionario[str(soup.a.string)]= str(link)
+            dizionario[count]= str(soup.a.string), str(link)
             count+=1
         except AttributeError:
             c=c
@@ -186,7 +186,7 @@ footer_html= """
 def resfresh_contents():
     print("updating all contents")
     load_services()
-    #create_service()
+    create_service()
     create_index()
     print("finished update")
 
@@ -198,56 +198,29 @@ server = socketserver.ThreadingTCPServer((ip,port), ServerHandler)
 def load_services():
     # create_page_img_html('http://xml2.corriereobjects.it/rss/homepage.xml', 'images/pronto_soccorso', 'servizi.html', 'Servizi')
     dizionario=getLink()
-    for name in dizionario.items():
-        print("",name)
-        add_service(name.key(), name.value())
+    c=0
+    while c<12:
+        name,link=dizionario.get(c)
+        add_service(link, name)
+        c+=1
 
 
 # metodo per eseguire l'aggiunga sulla tabella in comune per tutti
 def add_service(link, name):
-    service = str('<td><a href"{link}"><p>{name}</p></a></td>'.format(link=link,name=name))
+    service = str('<td><a href="{link}"><p>{name}</p></a></td>'.format(link=link,name=name))
     services.append(service)
 
 def create_service():
     f = open('servizi.html','w', encoding="utf-8")
     message = header_html + "<h1>Derby hospital</h1>" + navigation_bar
     message = message + '<tr><th colspan="3"><h2>Servizi</h2></th>'
-    for i in range(0,20,3):
+    for i in range(0,11,3):
         message = message + '<tr>"'+ services[i] + services[i+1] + services[i+2] + '"</tr>'
     
     f.write(message)
     f.close()
 
-# metodo per create una pagina locale, trovando l'img dentro la descrizione
-# che è in formato html perciò utilizzo beautifulsoup
-# non funziona con tutte le pagine solo le 4 precedenti
-def create_page_img_html(feed, image_url, name_page, title):
-    r = requests.get(feed)
-    if (r.status_code == 200):
-        if not os.path.exists(image_url):
-            os.makedirs(image_url)
-        d = feedparser.parse(r.text)
-        message = header_html + "<h1>" + title + "</h1>" + navigation_bar
-        # gestione eccezzioni se nel feed rss sono meno di 6 informazioni
-        try:
-            for i in range(6):
-                try:
-                    url_images = "./" + image_url + "/" + str(i) + ".jpg"
-                    os.remove(url_images)
-                except:
-                    pass
-                soup = BeautifulSoup(d.entries[i].description, features="lxml")
-                urllib.request.urlretrieve(soup.find('img')['src'], url_images)
-                # utilizzo metodo in comune per aggiungere le info nella tabella
-                # message = add_element_in_table(i, d.entries[i].link, url_images, d.entries[i].title, message)   
-        except:
-            pass
-        message = message + footer_html
-        f = open(name_page,'w', encoding="utf-8")
-        f.write(message)
-        f.close()
-    else:
-        print("Errore caricamento contenuti " + title)
+
     
 # creazione della pagina index.html (iniziale)
 # contenente i primi articoli di ogni testata giornalistica
