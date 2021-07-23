@@ -141,7 +141,7 @@ topnav a -> scritte del menu
 
 '''
 
-#
+#Barra del menu univoca per tutte le pagine html
 navigation_bar = """
         <br>
         <br>
@@ -159,27 +159,27 @@ navigation_bar = """
   		</div>
         <br>
         <br>
-        
         <table align="center">
 """.format(ip=ip,port=port)
 
+#Footer univoco per tutte le pagine html
 footer_html= """
         </table>
     </body>
 </html>
 """
 
-
-  
+#Metodo che carica i servizi dal link_hospital e genera la pagina servizi.html
 def resfresh_contents():
-    print("started update")
+    print("Started update")
     load_services()
     create_service()
-    print("finished update")
+    print("Finished update")
 
-
+#Apertura della socket sull'ip locale della macchina corrente e alla porta di default
 server = socketserver.ThreadingTCPServer((ip,port), ServerHandler)
 
+#Metodo che richiama add_service() per tutti i servizi dentro al dizionario
 def load_services():
     dizionario=getLink()
     c=0
@@ -188,12 +188,13 @@ def load_services():
         add_service(link, name)
         c+=1
 
-
+#Metodo che aggiunge all'array services la row della table html della pagina servizi.html
 def add_service(link, name):
     image = images.get(str(random.randint(1,4)))
     service = str('<td><a href="{link}"><img src="{image}"><br><p>{name}</p></a></td>'.format(link=link,image=image,name=name))
     services.append(service)
 
+#Metodo che genera la pagina servizi.html con tutti i servizi presenti nell'array services
 def create_service():
     f = open('servizi.html','w', encoding="utf-8")
     row = header_html + '<h1>Derby hospital</h1>' + navigation_bar
@@ -205,8 +206,7 @@ def create_service():
     f.write(row)
     f.close()
 
-
-    
+#Metodo che genera la pagina index.html
 def create_index():
     f = open('index.html','w', encoding="utf-8")
     table = header_html + "<h1>Derby hospital</h1>" + navigation_bar
@@ -220,8 +220,7 @@ def create_index():
     f.write(table)
     f.close()
 
-   
-
+#Metodo che gestisce l'arresto da riga di comando
 def signal_handler(signal, frame):
     print('Exiting (Ctrl+C pressed)')
     try:
@@ -229,14 +228,21 @@ def signal_handler(signal, frame):
         server.server_close()
     finally:
       sys.exit(0)
-      
+
+#main del programma
 def main():
+    #Al primo avvio vengono caricati i services e viene generata sercizi.html
     resfresh_contents()
+    #Generazione index.html
     create_index()
+    #Si occupa di gestire la terminazione da tastiera,
+    #assicurandosi che tutti i thread vengano terminati corretamente
     server.daemon_threads = True 
+    #Sovrascrive la socket vecchia (che ancora non è chiusa) nel caso ce ne sia una nuova
     server.allow_reuse_address = True  
+    #interrompe il programma quando viene premuto "CTRL + C" 
     signal.signal(signal.SIGINT, signal_handler)
-    f = open('AllRequestsGET.txt','w', encoding="utf-8")
+    f = open('GETRequest.txt','w', encoding="utf-8")
     f.close()
     try:
       while True:
