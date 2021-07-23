@@ -1,26 +1,20 @@
+
 # -*- coding: utf-8 -*-
 """
-Created on Tue Jul 20 16:45:21 2021
-
-@author: Gustavo
+Elaborato programmazione di reti 2021
+Autori: Gustavo Mazzanti & Tommaso Brini
+Matricole: 0000914975 & 0000933814
+E-mail: gustavo.mazzanti@studio.unibo.it
+        tommaso.brini@studio.unibo.it
 """
 
-
-#!/bin/env python
+#importiamo le librerie necessarie
 import sys, signal
 import http.server
 import socketserver
-#new imports
-import requests
-import urllib.request
-import os
-import feedparser
-import json
-import threading 
-import cgi
+import random
 from bs4 import BeautifulSoup, SoupStrainer
 import socket
-
 import re
 try:
     from urllib2 import urlopen
@@ -29,23 +23,27 @@ except ImportError: # Python 3
     from urllib.parse import urljoin
     from urllib.request import urlopen
 
-
-
-#manage the wait witout busy waiting
-waiting_refresh = threading.Event()
-
-# primi articoli di ogni testata
+#Istanziato array per i vari servizi
 services = [] 
 
-# Imposta il numero della porta: 8080
+#Istanziato dizionario con le foto per i servizi
+images = {
+    '1': '/images/ospedale/agg.jpg',
+    '2': '/images/ospedale/agg1.png',
+    '3': '/images/ospedale/agg2.jpg',
+    '4': '/images/ospedale/agg3.jpg'
+    }
+
+#Link diretto al sito dell'ospedale San Raffaele
 link_hospital = "https://www.hsr.it/dottori"
+
+# Impostato il numero della porta a 8080
 port = 8080
 
-# classe che mantiene le funzioni di SimpleHTTPRequestHandler e implementa
-# il metodo get nel caso in cui si voglia fare un refresh
-
+#Metodo che restituisce un dizionario con il link e il nome dei vari servizi recuperati
+#sul sito del San Raffaele, ispezionandone il file html
 def getLink():
-    url = "https://www.hsr.it/dottori"
+    url = link_hospital
     count = 0
     c = 0
     dizionario={}
@@ -70,10 +68,9 @@ def getLink():
     return dizionario
 
 
-
+#Metodo che scrive su file le richieste effettuate dai client
 class ServerHandler(http.server.SimpleHTTPRequestHandler):        
-    def do_GET(self):
-        # Scrivo sul file AllRequestsGET le richieste dei client     
+    def do_GET(self):    
         with open("GET.txt", "a") as out:
           info = "GET request,\nPath: " + str(self.path) + "\nHeaders:\n" + str(self.headers) + "\n"
           out.write(str(info))
@@ -81,7 +78,8 @@ class ServerHandler(http.server.SimpleHTTPRequestHandler):
             resfresh_contents()
             self.path = '/'
         http.server.SimpleHTTPRequestHandler.do_GET(self)
-        
+
+#metodo che restituisce l'ip locale della macchina su cui il programma viene avviato
 def getIp():
     s = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
     try:
@@ -94,15 +92,11 @@ def getIp():
         s.close()
     print("L'ip per il sito è:" ,ip)
     return ip
-        
+
 
 ip = getIp();
 
-
-
-# ThreadingTCPServer per gestire più richieste
-
-# la parte iniziale è identica per tutti i giornali
+#Impostato un header univoco per tutte le pagine html
 header_html = """
 <html>
     <head>
@@ -154,7 +148,7 @@ topnav a -> scritte del menu
 
 '''
 
-# la barra di navigazione è identica per tutti i giornali
+#Impostata la barra del menu, che sarà univoca per tutte le view html
 navigation_bar = """
         <br>
         <br>
@@ -176,29 +170,26 @@ navigation_bar = """
         <table align="center">
 """.format(ip=ip,port=port)
 
+#Impostato il footer delle pagine html
 footer_html= """
         </table>
     </body>
 </html>
 """
 
-
-  
-# creo tutti i file utili per navigare.
+#Metodo che carica tutti i servizi, ed effettua il refresh di questi
 def resfresh_contents():
-    print("updating all contents")
+    print("Started update")
     load_services()
     create_service()
-    create_index()
-    print("finished update")
+    print("Sinished update")
 
 
+#apertura della socket sull'ip locale e la porta predefinita
 server = socketserver.ThreadingTCPServer((ip,port), ServerHandler)
 
-# creazione della pagina specifica del sole 24 ore
-# prendendo le informazioni direttamente dal feed rss
+#Matodo che chiama add_service per ogni servizio salvato nel dizionario
 def load_services():
-    # create_page_img_html('http://xml2.corriereobjects.it/rss/homepage.xml', 'images/pronto_soccorso', 'servizi.html', 'Servizi')
     dizionario=getLink()
     c=0
     while c<9:
@@ -206,67 +197,63 @@ def load_services():
         add_service(link, name)
         c+=1
 
-
-# metodo per eseguire l'aggiunga sulla tabella in comune per tutti
+#Metodo che genera la riga della tabella html e la salva nell'array services
 def add_service(link, name):
-    service = str('<td><a href="{link}"><p>{name}</p></a></td>'.format(link=link,name=name))
+    image = images.get(str(random.randint(1,4)))
+    service = str('<td><a href="{link}"><img src="{image}"><br><p>{name}</p></a></td>'.format(link=link,image=image,name=name))
     services.append(service)
 
+#Metodo che genera la pagina html dei servizi prendendo tutti i services dall'array e mettendoli nella tabella
 def create_service():
     f = open('servizi.html','w', encoding="utf-8")
-    message = header_html + '<h1>Derby hospital</h1>' + navigation_bar
-    message = message + '<tr><th colspan="3"><h2>Servizi</h2></th>'
+    row = header_html + '<h1>Derby hospital</h1>' + navigation_bar
+    row = row + '<tr><th colspan="3"><h2>Servizi</h2></th>'
     for i in range(0,8,3):
-        message = message + '<tr>'+ services[i] + services[i+1] + services[i+2] + '</tr>'
-    message = message + '<tr><td></td><td><a href="https://www.hsr.it/dottori?"><p>Altro</p></a></td>'
-    f.write(message)
+        row = row + '<tr>'+ services[i] + services[i+1] + services[i+2] + '</tr>'
+    image = images.get(str(random.randint(1,4)))
+    row = row + '<tr><td></td><td><a href="https://www.hsr.it/dottori?"><img src="{image}"><br><p>Altro</p></a></td>'.format(image=image)
+    f.write(row)
     f.close()
 
-
-    
-# creazione della pagina index.html (iniziale)
-# contenente i primi articoli di ogni testata giornalistica
+#Metodo che genera la pagina html index, ovvero la schermata iniziale del Web Server 
 def create_index():
     f = open('index.html','w', encoding="utf-8")
-    message = header_html + "<h1>Derby hospital</h1>" + navigation_bar
-    message = message + '<tr><th colspan="3"><h2>Home</h2></th>'
-    message = message + '<tr><td><a href="https://www.hsr.it/"><img src="/images/ospedale/SanRaffaele.png"><br><p>SanRaffaele</p></a></td>'
-    message = message + '<td><a href="https://www.hsr.it/prenotazioni"><img src="/images/ospedale/prenota-ora.png"><br><p>Prenotazioni</p></a></td>'
-    message = message + '<td><a href="https://www.hsr.it/chi-siamo"><img src="/images/ospedale/chi_siamo.jpg"><br><p>Chi siamo</p></a></td></tr>'
-    message = message + '<tr><td><a href="https://www.hsr.it/strutture"><img src="/images/ospedale/sedi.jpg"><br><p>Le nostre sedi</p></a></td>'
-    message = message + '<td><a href="http://{ip}:{port}/servizi.html"><img src="/images/ospedale/servizi.png"><br><p>Servizi</p></a></td>'.format(ip=ip, port=port)
-    message = message + '<td><a href="https://www.hsr.it/news"><img src="/images/ospedale/news.jpg"><br><p>News</p></a></td></tr>'
-    f.write(message)
+    table = header_html + "<h1>Derby hospital</h1>" + navigation_bar
+    table = table + '<tr><th colspan="3"><h2>Home</h2></th>'
+    table = table + '<tr><td><a href="https://www.hsr.it/"><img src="/images/ospedale/SanRaffaele.png"><br><p>SanRaffaele</p></a></td>'
+    table = table + '<td><a href="https://www.hsr.it/prenotazioni"><img src="/images/ospedale/prenota-ora.png"><br><p>Prenotazioni</p></a></td>'
+    table = table + '<td><a href="https://www.hsr.it/chi-siamo"><img src="/images/ospedale/chi_siamo.jpg"><br><p>Chi siamo</p></a></td></tr>'
+    table = table + '<tr><td><a href="https://www.hsr.it/strutture"><img src="/images/ospedale/sedi.jpg"><br><p>Le nostre sedi</p></a></td>'
+    table = table + '<td><a href="http://{ip}:{port}/servizi.html"><img src="/images/ospedale/servizi.png"><br><p>Servizi</p></a></td>'.format(ip=ip, port=port)
+    table = table + '<td><a href="https://www.hsr.it/news"><img src="/images/ospedale/news.jpg"><br><p>News</p></a></td></tr>'
+    f.write(table)
     f.close()
 
    
-
-# definiamo una funzione per permetterci di uscire dal processo tramite Ctrl-C
+#metodo che gestisce l'arresto da console
 def signal_handler(signal, frame):
-    print( 'Exiting http server (Ctrl+C pressed)')
+    print('Exiting (Ctrl+C pressed)')
     try:
       if(server):
         server.server_close()
     finally:
-      # fermo il thread del refresh senza busy waiting
-      waiting_refresh.set()
       sys.exit(0)
       
-# metodo che viene chiamato al "lancio" del server
+#main del programma
 def main():
+    #Al primo avvio carica i servizi e genera servizi.html
     resfresh_contents()
-    #Assicura che da tastiera usando la combinazione
-    #di tasti Ctrl-C termini in modo pulito tutti i thread generati
-    server.daemon_threads = True 
-    #il Server acconsente al riutilizzo del socket anche se ancora non è stato
-    #rilasciato quello precedente, andandolo a sovrascrivere
-    server.allow_reuse_address = True  
-    #interrompe l'esecuzione se da tastiera arriva la sequenza (CTRL + C) 
+    #Genera index.html
+    create_index()
+    #Assicura che termini con il comando da tastiera in modo pulito
+    server.daemon_threads = True
+    #Abilita il riutilizzo della socket anche se non è ancora stato rilasciato quello precedente
+    server.allow_reuse_address = True
+    #Interrompe l'esecuzione se viene premuto "CTRL + C"
     signal.signal(signal.SIGINT, signal_handler)
-    # cancella i dati get ogni volta che il server viene attivato
-    f = open('AllRequestsGET.txt','w', encoding="utf-8")
+    #Sovrascrive GETRequest.txt
+    f = open('GETRequests.txt','w', encoding="utf-8")
     f.close()
-    # entra nel loop infinito
     try:
       while True:
         server.serve_forever()
