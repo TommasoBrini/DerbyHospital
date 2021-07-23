@@ -1,16 +1,12 @@
-
 # -*- coding: utf-8 -*-
 """
-Elaborato programmazione di reti 2021
-Autori: Gustavo Mazzanti & Tommaso Brini
-Matricole: 0000914975 & 0000933814
-E-mail: gustavo.mazzanti@studio.unibo.it
-        tommaso.brini@studio.unibo.it
+Created on Tue Jul 20 16:45:21 2021
+
+@author: Gustavo
 """
 
-#importiamo le librerie necessarie
-import sys
-import signal
+#Imports
+import sys, signal
 import http.server
 import socketserver
 import random
@@ -24,10 +20,8 @@ except ImportError: # Python 3
     from urllib.parse import urljoin
     from urllib.request import urlopen
 
-#Istanziato array per i vari servizi
 services = [] 
 
-#Istanziato dizionario con le foto per i servizi
 images = {
     '1': '/images/ospedale/agg.jpg',
     '2': '/images/ospedale/agg1.png',
@@ -35,14 +29,13 @@ images = {
     '4': '/images/ospedale/agg3.jpg'
     }
 
-#Link diretto al sito dell'ospedale San Raffaele
+# Imposta il numero della porta: 8080
 link_hospital = "https://www.hsr.it/dottori"
-
-# Impostato il numero della porta a 8080
 port = 8080
 
-#Metodo che restituisce un dizionario con il link e il nome dei vari servizi recuperati
-#sul sito del San Raffaele, ispezionandone il file html
+# classe che mantiene le funzioni di SimpleHTTPRequestHandler e implementa
+# il metodo get nel caso in cui si voglia fare un refresh
+
 def getLink():
     url = link_hospital
     count = 0
@@ -69,18 +62,18 @@ def getLink():
     return dizionario
 
 
-#Metodo che scrive su file le richieste effettuate dai client
+
 class ServerHandler(http.server.SimpleHTTPRequestHandler):        
-    def do_GET(self):    
-        # with open("GET.txt", "a") as out:
-        #   info = "GET request,\nPath: " + str(self.path) + "\nHeaders:\n" + str(self.headers) + "\n"
-        #   out.write(str(info))
+    def do_GET(self):
+        # Scrivo sul file AllRequestsGET le richieste dei client     
+        with open("GET.txt", "a") as out:
+          info = "GET request,\nPath: " + str(self.path) + "\nHeaders:\n" + str(self.headers) + "\n"
+          out.write(str(info))
         if self.path == '/refresh':
             resfresh_contents()
             self.path = '/'
         http.server.SimpleHTTPRequestHandler.do_GET(self)
-
-#metodo che restituisce l'ip locale della macchina su cui il programma viene avviato
+        
 def getIp():
     s = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
     try:
@@ -93,15 +86,12 @@ def getIp():
         s.close()
     print("L'ip per il sito è:" ,ip)
     return ip
-
-
+        
 ip = getIp();
 
-#Impostato un header univoco per tutte le pagine html
 header_html = """
 <html>
     <head>
-        <link rel="shortcut icon" href="#">
         <style>
             h1 {
                 text-align: center;
@@ -150,7 +140,6 @@ topnav a -> scritte del menu
 
 '''
 
-#Impostata la barra del menu, che sarà univoca per tutte le view html
 navigation_bar = """
         <br>
         <br>
@@ -172,25 +161,24 @@ navigation_bar = """
         <table align="center">
 """.format(ip=ip,port=port)
 
-#Impostato il footer delle pagine html
 footer_html= """
         </table>
     </body>
 </html>
 """
 
-#Metodo che carica tutti i servizi, ed effettua il refresh di questi
+
+  
 def resfresh_contents():
-    print("Started update")
+    print("started update")
     load_services()
     create_service()
-    print("Finished update")
+    create_index()
+    print("finished update")
 
 
-#apertura della socket sull'ip locale e la porta predefinita
 server = socketserver.ThreadingTCPServer((ip,port), ServerHandler)
 
-#Matodo che chiama add_service per ogni servizio salvato nel dizionario
 def load_services():
     dizionario=getLink()
     c=0
@@ -199,13 +187,12 @@ def load_services():
         add_service(link, name)
         c+=1
 
-#Metodo che genera la riga della tabella html e la salva nell'array services
+
 def add_service(link, name):
     image = images.get(str(random.randint(1,4)))
     service = str('<td><a href="{link}"><img src="{image}"><br><p>{name}</p></a></td>'.format(link=link,image=image,name=name))
     services.append(service)
 
-#Metodo che genera la pagina html dei servizi prendendo tutti i services dall'array e mettendoli nella tabella
 def create_service():
     f = open('servizi.html','w', encoding="utf-8")
     row = header_html + '<h1>Derby hospital</h1>' + navigation_bar
@@ -213,11 +200,12 @@ def create_service():
     for i in range(0,8,3):
         row = row + '<tr>'+ services[i] + services[i+1] + services[i+2] + '</tr>'
     image = images.get(str(random.randint(1,4)))
-    row = row + '<tr><td></td><td><a href="https://www.hsr.it/dottori?"><img src="{image}"><br><p>Visualizza tutti</p></a></td>'.format(image=image)
+    row = row + '<tr><td></td><td><a href="https://www.hsr.it/dottori?"><img src="{image}"><br><p>Altro</p></a></td>'.format(image=image)
     f.write(row)
     f.close()
 
-#Metodo che genera la pagina html index, ovvero la schermata iniziale del Web Server 
+
+    
 def create_index():
     f = open('index.html','w', encoding="utf-8")
     table = header_html + "<h1>Derby hospital</h1>" + navigation_bar
@@ -232,7 +220,7 @@ def create_index():
     f.close()
 
    
-#metodo che gestisce l'arresto da console
+
 def signal_handler(signal, frame):
     print('Exiting (Ctrl+C pressed)')
     try:
@@ -241,21 +229,13 @@ def signal_handler(signal, frame):
     finally:
       sys.exit(0)
       
-#main del programma
 def main():
-    #Al primo avvio carica i servizi e genera servizi.html
     resfresh_contents()
-    #Genera index.html
-    create_index()
-    #Assicura che termini con il comando da tastiera in modo pulito
-    server.daemon_threads = True
-    #Abilita il riutilizzo della socket anche se non è ancora stato rilasciato quello precedente
-    server.allow_reuse_address = True
-    #Interrompe l'esecuzione se viene premuto "CTRL + C"
+    server.daemon_threads = True 
+    server.allow_reuse_address = True  
     signal.signal(signal.SIGINT, signal_handler)
-    #Sovrascrive GETRequest.txt
-    # f = open('GETRequests.txt','w', encoding="utf-8")
-    # f.close()
+    f = open('AllRequestsGET.txt','w', encoding="utf-8")
+    f.close()
     try:
       while True:
         server.serve_forever()
