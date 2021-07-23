@@ -49,7 +49,7 @@ def getLink():
     count = 0
     c = 0
     dizionario={}
-    while count<12:
+    while count<9:
         if c<10:
             tag = "00" + str(c)
         elif c<100:
@@ -170,7 +170,9 @@ navigation_bar = """
   		    <a href="http://{ip}:{port}/refresh" style="float: center">Aggiorna contenuti</a>
             <a href="http://{ip}:{port}/info.pdf" download="info.pdf" style="float: center">Download info pdf</a>
   		</div>
-        <br><br>
+        <br>
+        <br>
+        
         <table align="center">
 """.format(ip=ip,port=port)
 
@@ -199,7 +201,7 @@ def load_services():
     # create_page_img_html('http://xml2.corriereobjects.it/rss/homepage.xml', 'images/pronto_soccorso', 'servizi.html', 'Servizi')
     dizionario=getLink()
     c=0
-    while c<12:
+    while c<9:
         name,link=dizionario.get(c)
         add_service(link, name)
         c+=1
@@ -212,11 +214,11 @@ def add_service(link, name):
 
 def create_service():
     f = open('servizi.html','w', encoding="utf-8")
-    message = header_html + "<h1>Derby hospital</h1>" + navigation_bar
+    message = header_html + '<h1>Derby hospital</h1>' + navigation_bar
     message = message + '<tr><th colspan="3"><h2>Servizi</h2></th>'
-    for i in range(0,11,3):
-        message = message + '<tr>"'+ services[i] + services[i+1] + services[i+2] + '"</tr>'
-    
+    for i in range(0,8,3):
+        message = message + '<tr>'+ services[i] + services[i+1] + services[i+2] + '</tr>'
+    message = message + '<tr><td></td><td><a href="https://www.hsr.it/dottori?"><p>Altro</p></a></td>'
     f.write(message)
     f.close()
 
