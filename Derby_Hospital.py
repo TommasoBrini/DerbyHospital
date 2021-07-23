@@ -44,16 +44,32 @@ port = 8080
 # classe che mantiene le funzioni di SimpleHTTPRequestHandler e implementa
 # il metodo get nel caso in cui si voglia fare un refresh
 
-def get_link(href_tag):
-    url = link_hospital
-    only_links = SoupStrainer("a", href=re.compile(href_tag))
-    soup = BeautifulSoup(urlopen(url), parse_only=only_links)
-    urls = [urljoin(url, a["href"]) for a in soup(only_links)]
-    link = "n".join(urls)
-    return link
+def getLink():
+    url = "https://www.hsr.it/dottori"
+    count = 0
+    c = 0
+    dizionario={}
+    while count<21:
+        if c<10:
+            tag = "00" + str(c)
+        elif c<100:
+            tag = "0" + str(c)
+        else:
+            tag = str(count)
+        
+        only_links = SoupStrainer("a", href=re.compile(tag))
+        soup = BeautifulSoup(urlopen(url), parse_only=only_links)
+        urls = [urljoin(url,a["href"]) for a in soup(only_links)]
+        link = "n".join(urls)
+        c+=1
+        try :
+            dizionario[str(soup.a.string)]= str(link)
+            count+=1
+        except AttributeError:
+            c=c
+    return dizionario
 
 
-neuroradiologia=get_link("001")
 
 class ServerHandler(http.server.SimpleHTTPRequestHandler):        
     def do_GET(self):
@@ -130,7 +146,7 @@ header_html = """
         </style>
     </head>
     <body>
-        <title>Mazzanti hospital services</title>
+        <title>Derby hospital services</title>
 """
 
 '''
@@ -145,19 +161,18 @@ navigation_bar = """
         <br>
         <div class="topnav">
             <a class="active" href="http://{ip}:{port}" style="float: center">Home</a>
-  		    <a href="http://{ip}:{port}/pronto_soccorso.html" style="float: center">Pronto soccorso</a>
-            <a href="{neuro}" style="float: center">Neurologia</a>
-            <a href="http://{ip}:{port}/pediatria.html" style="float: center">Pediatria</a>
-            <a href="http://{ip}:{port}/oculistica.html" style="float: center">Oculistica</a>
-            <a href="http://{ip}:{port}/cardiologia.html" style="float: center">Cardiologia</a>
-            <a href="http://{ip}:{port}/radiologia.html" style="float: center">Radiologia</a>
-            <a href="http://{ip}:{port}/psichiatria.html" style="float: center">Psichiatria</a>
+  		    <a href="https://www.hsr.it/" style="float: center">San Raffaele</a>
+            <a href="https://www.hsr.it/prenotazioni" style="float: center">Prenotazioni</a>
+            <a href="https://www.hsr.it/chi-siamo" style="float: center">Chi Siamo</a>
+            <a href="https://www.hsr.it/strutture" style="float: center">Le nostre sedi</a>
+            <a href="http://{ip}:{port}/servizi.html" style="float: center">Servizi</a>
+            <a href="https://www.hsr.it/news" style="float: center">News</a>
   		    <a href="http://{ip}:{port}/refresh" style="float: center">Aggiorna contenuti</a>
             <a href="http://{ip}:{port}/info.pdf" download="info.pdf" style="float: center">Download info pdf</a>
   		</div>
         <br><br>
         <table align="center">
-""".format(neuro=neuroradiologia,ip=ip,port=port)
+""".format(ip=ip,port=port)
 
 footer_html= """
         </table>
@@ -170,13 +185,8 @@ footer_html= """
 # creo tutti i file utili per navigare.
 def resfresh_contents():
     print("updating all contents")
-    create_pronto_soccorso()
-    create_neurologia()
-    create_pediatria()
-    create_oculistica()
-    create_cardiologia()
-    create_radiologia()
-    create_psichiatria()
+    load_services()
+    #create_service()
     create_index()
     print("finished update")
 
@@ -185,49 +195,28 @@ server = socketserver.ThreadingTCPServer((ip,port), ServerHandler)
 
 # creazione della pagina specifica del sole 24 ore
 # prendendo le informazioni direttamente dal feed rss
-def create_pronto_soccorso():
-    create_page_img_html('http://xml2.corriereobjects.it/rss/homepage.xml', 'images/pronto_soccorso', 'pronto_soccorso.html', 'Pronto soccorso')
-
-# creazione della pagina specifica di Repubblica
-# prendendo le informazioni direttamente dal feed rss
-def create_neurologia():
-    create_page_img_html('http://xml2.corriereobjects.it/rss/homepage.xml', 'images/neurologia', 'neurologia.html', 'Neurologia')
-
-# creazione della pagina specifica del corriere della sera
-# prendendo le informazioni direttamente dal feed rss
-def create_pediatria():
-    create_page_img_html('http://xml2.corriereobjects.it/rss/homepage.xml', 'images/pediatria', 'pediatria.html', 'Pediatria')
-    
-# creazione della pagina specifica dell' Internazionale
-# prendendo le informazioni direttamente dal feed rss
-def create_oculistica():
-    create_page_img_html('https://www.internazionale.it/sitemaps/rss.xml', 'images/oculistica', 'oculistica.html', 'Oculistica')
-
-# creazione della pagina specifica di Tom's Hardware
-# prendendo le informazioni direttamente dal feed rss
-def create_cardiologia():
-    create_page_img_html('https://www.tomshw.it/feed/', 'images/cardiologia', 'cardiologia.html', 'Cardiologia')
-
-# creazione della pagina specifica di SmartWorld
-# prendendo le informazioni direttamente dal feed rss
-def create_radiologia():
-    create_page_img_html('https://www.smartworld.it/feed', 'images/radiologia', 'radiologia.html', 'Radiologia')
+def load_services():
+    # create_page_img_html('http://xml2.corriereobjects.it/rss/homepage.xml', 'images/pronto_soccorso', 'servizi.html', 'Servizi')
+    dizionario=getLink()
+    for name in dizionario.items():
+        print("",name)
+        add_service(name.key(), name.value())
 
 
-def create_psichiatria():
-    create_page_img_html('https://www.smartworld.it/feed', 'images/psichiatria', 'psichiatria.html', 'Psichiatria')
-    
 # metodo per eseguire l'aggiunga sulla tabella in comune per tutti
-def add_element_in_table(i, link, url_images, title, message):
-    if (i == 0):
-        #il primo articolo di ogni testata va nella pagina di HOME
-        services.append('<td><a href="' + link + '"><img src="' + url_images + '"><br><p>'+ title + '</p></a></td>')
-    if (i%3 == 0):
-        message = message + "<tr>"
-    message = message + '<td><a href="' + link + '"><img src="' + url_images + '"><br><p>'+ title + '</p></a></td>'
-    if (i%3 == 2):
-        message = message + "</tr>"
-    return message
+def add_service(link, name):
+    service = str('<td><a href"{link}"><p>{name}</p></a></td>'.format(link=link,name=name))
+    services.append(service)
+
+def create_service():
+    f = open('servizi.html','w', encoding="utf-8")
+    message = header_html + "<h1>Derby hospital</h1>" + navigation_bar
+    message = message + '<tr><th colspan="3"><h2>Servizi</h2></th>'
+    for i in range(0,20,3):
+        message = message + '<tr>"'+ services[i] + services[i+1] + services[i+2] + '"</tr>'
+    
+    f.write(message)
+    f.close()
 
 # metodo per create una pagina locale, trovando l'img dentro la descrizione
 # che è in formato html perciò utilizzo beautifulsoup
@@ -250,7 +239,7 @@ def create_page_img_html(feed, image_url, name_page, title):
                 soup = BeautifulSoup(d.entries[i].description, features="lxml")
                 urllib.request.urlretrieve(soup.find('img')['src'], url_images)
                 # utilizzo metodo in comune per aggiungere le info nella tabella
-                message = add_element_in_table(i, d.entries[i].link, url_images, d.entries[i].title, message)   
+                # message = add_element_in_table(i, d.entries[i].link, url_images, d.entries[i].title, message)   
         except:
             pass
         message = message + footer_html
@@ -264,16 +253,14 @@ def create_page_img_html(feed, image_url, name_page, title):
 # contenente i primi articoli di ogni testata giornalistica
 def create_index():
     f = open('index.html','w', encoding="utf-8")
-    try:
-        message = header_html + "<h1>Mazzanti hospital</h1>" + navigation_bar
-        message = message + '<tr><th colspan="2"><h2>Servizi</h2></th>'
-        message = message + '<tr>' + services[0] + services[1]
-        message = message + services[4] + "</tr>"
-        message = message + '<tr>' + services[2] + services[3]
-        message = message + services[5] + "</tr>"
-        message = message + footer_html
-    except:
-        pass
+    message = header_html + "<h1>Derby hospital</h1>" + navigation_bar
+    message = message + '<tr><th colspan="3"><h2>Home</h2></th>'
+    message = message + '<tr><td><a href="https://www.hsr.it/"><img src="/images/ospedale/SanRaffaele.png"><br><p>SanRaffaele</p></a></td>'
+    message = message + '<td><a href="https://www.hsr.it/prenotazioni"><img src="/images/ospedale/prenota-ora.png"><br><p>Prenotazioni</p></a></td>'
+    message = message + '<td><a href="https://www.hsr.it/chi-siamo"><img src="/images/ospedale/chi_siamo.jpg"><br><p>Chi siamo</p></a></td></tr>'
+    message = message + '<tr><td><a href="https://www.hsr.it/strutture"><img src="/images/ospedale/sedi.jpg"><br><p>Le nostre sedi</p></a></td>'
+    message = message + '<td><a href="http://{ip}:{port}/servizi.html"><img src="/images/ospedale/servizi.png"><br><p>Servizi</p></a></td>'.format(ip=ip, port=port)
+    message = message + '<td><a href="https://www.hsr.it/news"><img src="/images/ospedale/news.jpg"><br><p>News</p></a></td></tr>'
     f.write(message)
     f.close()
 
